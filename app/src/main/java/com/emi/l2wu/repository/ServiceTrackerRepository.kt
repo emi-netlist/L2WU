@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /*
-    ServiceTrackerRepository is used to flag of the Service is started in ScreenControlService.kt, then this is remembered
+    ServiceTrackerRepository is used to flag if Service is started in ScreenControlService.kt, then this is remembered
     with the DataStore API.
  */
 object ServiceTrackerRepository {
