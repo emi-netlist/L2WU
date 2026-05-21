@@ -20,7 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,10 +29,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
-fun MainScreen() {
+fun MainScreen(
+    viewModel: SettingsViewModel = viewModel()
+) {
     val context = LocalContext.current
 
     var hasNotificationPermission by remember {
@@ -53,7 +56,8 @@ fun MainScreen() {
         }
     }
 
-    var isServiceStarted by remember { mutableStateOf(false) }
+//    var isServiceStarted by remember { mutableStateOf(false) }
+    val isServiceStarted by viewModel.isServiceStarted.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier.fillMaxSize(),
@@ -93,7 +97,7 @@ fun MainScreen() {
             onClick = {
                 val intent = Intent(context, ScreenControlService::class.java)
                 ContextCompat.startForegroundService(context, intent)
-                isServiceStarted = true
+                viewModel.setServiceStarted(true)
             },
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {

@@ -4,6 +4,7 @@ import android.content.*
 import android.hardware.*
 import android.os.*
 import androidx.core.app.NotificationCompat
+import com.emi.l2wu.repository.ServiceTrackerRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 
 class ScreenControlService : Service(), SensorEventListener {
@@ -47,6 +48,9 @@ class ScreenControlService : Service(), SensorEventListener {
         )
 
         createNotificationChannel()
+
+        // Mark as running as soon as the process creates the service
+        ServiceTrackerRepository.setServiceRunning(true)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -132,6 +136,9 @@ class ScreenControlService : Service(), SensorEventListener {
         sensorManager.unregisterListener(this)
 //        wakeLock.release()
         if (cpuWakeLock?.isHeld == true) cpuWakeLock?.release()
+
+        // Mark as stopped when the service dies
+        ServiceTrackerRepository.setServiceRunning(false)
         super.onDestroy()
     }
 }
