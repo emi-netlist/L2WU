@@ -99,5 +99,11 @@ fun MainScreen() {
         ) {
             Text("Start Service")
         }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isServiceStarted) {
+            Text("Service connected. Please close the application.", modifier = Modifier.padding(16.dp))
+        }
     }
 }
