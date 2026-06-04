@@ -15,6 +15,11 @@ While this operations(**Waking the screen** from the background and **Locking th
 3. **Accessibility Service:** This is the only modern way to lock the screen without requiring the user to grant "Device Admin" (which is being phased out)
 4. **Jetpack Compose:** For the UI.
 
+## Battery Optimization
+Screen Turns ON: The application stops the accelerometer (saves battery), but keep the service/notification alive so you can click "Lock".
+
+Screen Turns OFF: The application starts the accelerometer and acquire the CPU WakeLock so it can listen for the "Lift" gesture.
+
 ## How to use this app:
 
 Grant Notification Permission: When you run the app, you must click the button to trigger the system dialog and tap "Allow". If you don't, Android 16 will silently block notifications.

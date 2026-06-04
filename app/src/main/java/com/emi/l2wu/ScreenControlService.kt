@@ -5,7 +5,6 @@ import android.hardware.*
 import android.os.*
 import androidx.core.app.NotificationCompat
 import com.emi.l2wu.repository.ServiceTrackerRepository
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class ScreenControlService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
@@ -22,6 +21,22 @@ class ScreenControlService : Service(), SensorEventListener {
     private val CHANNEL_ID = "ScreenControlChannel"
     private val NOTIF_ID = 1
 
+    // Receiver to detect screen state changes
+    private val screenStateReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> {
+                    // Screen is OFF: Start listening for "lift"
+                    startLiftingDetection()
+                }
+                Intent.ACTION_SCREEN_ON -> {
+                    // Screen is on: Stop sensor to save power
+                    stopLiftingDetection()
+                }
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
@@ -35,45 +50,52 @@ class ScreenControlService : Service(), SensorEventListener {
 //            "ScreenControl:WakeUp"
 //        )
 
-        // 1. Partial Wake Lock: Keeps the CPU running to process sensor data
+        // Partial Wake Lock: Keeps the CPU running to process sensor data
         cpuWakeLock = powerManager.newWakeLock(
             PowerManager.PARTIAL_WAKE_LOCK,
             "ScreenControl:CpuKeepAlive"
         )
 
-        // 2. Screen Wake Lock: To actually turn the screen on
+        // Screen Wake Lock: To actually turn the screen on
         screenWakeLock = powerManager.newWakeLock(
             PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
             "ScreenControl:WakeUp"
         )
 
-        createNotificationChannel()
+        // Register the receiver
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+        }
+        registerReceiver(screenStateReceiver, filter)
 
+        // Initial state: if screen is already off, start detection
+        if (!powerManager.isInteractive) {
+            startLiftingDetection()
+        }
+
+        createNotificationChannel()
         // Mark as running as soon as the process creates the service
         ServiceTrackerRepository.setServiceRunning(true)
     }
+
+    private fun startLiftingDetection(): Unit {
+        if (cpuWakeLock?.isHeld == false) cpuWakeLock?.acquire()
+        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    private fun stopLiftingDetection() {
+        if (cpuWakeLock?.isHeld == true) cpuWakeLock?.release()
+        sensorManager.unregisterListener(this)
+    }
+
+
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == "LOCK_SCREEN") {
             LockAccessibilityService.instance?.lockScreen()
         }
-
-        createNotificationChannel()
         showNotification()
-
-        // Acquire the CPU lock so the sensor listener doesn't die
-        if (cpuWakeLock?.isHeld == false) {
-            cpuWakeLock?.acquire()
-        }
-
-        // Register sensor with a delay that is less likely to be throttled
-        sensorManager.registerListener(
-            this,
-            accelerometer,
-            SensorManager.SENSOR_DELAY_NORMAL   // NORMAL to save battery/prevent throttling
-        )
-
-//        sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_UI)
         return START_STICKY
     }
 
@@ -104,12 +126,12 @@ class ScreenControlService : Service(), SensorEventListener {
             val y = event.values[1]
             val z = event.values[2]
 
-            // Simple logic: If phone is tilted up (Y increases) and screen is off
-            if (y > 3.9 /*&& !powerManager.isInteractive*/) {
-//                wakeLock.acquire(1000) // Wake screen for 1 second
+            // Simple logic: If phone is tilted up (y > 5) and screen is off
+            if (y > 5 && !powerManager.isInteractive) {
+                // This wakes the screen.
+                // Once screen wakes, ACTION_SCREEN_ON fires and stops the sensor.
                 if (!screenWakeLock.isHeld) {
-                    // Turn screen on for 3 seconds
-                    screenWakeLock.acquire(3000)
+                    screenWakeLock.acquire(1000)
                 }
             }
         }
@@ -133,10 +155,8 @@ class ScreenControlService : Service(), SensorEventListener {
     override fun onBind(intent: Intent?) = null
 
     override fun onDestroy() {
-        sensorManager.unregisterListener(this)
-//        wakeLock.release()
-        if (cpuWakeLock?.isHeld == true) cpuWakeLock?.release()
-
+        unregisterReceiver(screenStateReceiver)
+        stopLiftingDetection()
         // Mark as stopped when the service dies
         ServiceTrackerRepository.setServiceRunning(false)
         super.onDestroy()
