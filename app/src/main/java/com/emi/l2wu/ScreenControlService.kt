@@ -5,6 +5,9 @@ import android.hardware.*
 import android.os.*
 import androidx.core.app.NotificationCompat
 import com.emi.l2wu.repository.ServiceTrackerRepository
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
+import kotlin.time.Duration.Companion.milliseconds
 
 class ScreenControlService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
@@ -126,8 +129,8 @@ class ScreenControlService : Service(), SensorEventListener {
             val y = event.values[1]
             val z = event.values[2]
 
-            // Simple logic: If phone is tilted up (y > 5) and screen is off
-            if (y > 5 && !powerManager.isInteractive) {
+            // Simple logic: If phone is tilted up (y > 4) and screen is off
+            if (y > 3.9 /*&& !powerManager.isInteractive*/) {
                 // This wakes the screen.
                 // Once screen wakes, ACTION_SCREEN_ON fires and stops the sensor.
                 if (!screenWakeLock.isHeld) {
@@ -135,6 +138,7 @@ class ScreenControlService : Service(), SensorEventListener {
                 }
             }
         }
+
     }
 
     private fun createNotificationChannel() {
