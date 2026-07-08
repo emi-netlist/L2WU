@@ -6,7 +6,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 /*
     ServiceTrackerRepository is used to flag if Service is started in ScreenControlService.kt, then this is remembered
-    with the DataStore API.
+    with the DataStore API (SettingsManager.kt).
+
+    I am using this as a flag as I cant have an instance of ViewModel in my ScreenControlService.kt, as
+    they have different lifecycles, and would create memory leaks.
  */
 object ServiceTrackerRepository {
     private val _isServiceRunning = MutableStateFlow(false)

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,6 +39,7 @@ fun MainScreen(
     viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    val roundedCornerShape = 8.dp
 
     var hasNotificationPermission by remember {
         mutableStateOf(
@@ -72,6 +74,7 @@ fun MainScreen(
         if (!hasNotificationPermission) {
             Button(
                 onClick = { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                shape = RoundedCornerShape(roundedCornerShape),
                 modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                 Text("Grant Notification Permission")
             }
@@ -85,6 +88,7 @@ fun MainScreen(
         Button(onClick = {
             context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
         },
+            shape = RoundedCornerShape(roundedCornerShape),
             modifier = Modifier.fillMaxWidth().padding(16.dp)) {
             Text("Enable Accessibility (For Locking)")
         }
@@ -99,6 +103,7 @@ fun MainScreen(
                 ContextCompat.startForegroundService(context, intent)
                 viewModel.setServiceStarted(true)
             },
+            shape = RoundedCornerShape(roundedCornerShape),
             modifier = Modifier.fillMaxWidth().padding(16.dp)
         ) {
             Text("Start Service")
@@ -107,7 +112,22 @@ fun MainScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isServiceStarted) {
-            Text("Service connected. Please close the application.", modifier = Modifier.padding(16.dp))
+            Text("Service connected. You can close the application.", modifier = Modifier.padding(16.dp))
         }
+
+        // Stop Service
+        Button(
+            enabled = if (isServiceStarted) true else false,
+            onClick = {
+                val intent = Intent(context, ScreenControlService::class.java)
+                context.stopService(intent)
+                viewModel.setServiceStarted(false)
+            },
+            shape = RoundedCornerShape(roundedCornerShape),
+            modifier = Modifier.fillMaxWidth().padding(16.dp)
+        ) {
+            Text("Stop Service")
+        }
+
     }
 }
