@@ -3,6 +3,8 @@ up, and lock the screen by touching an on-screen notification.
 
 It was made speciffically for the SONY Xperia 10 VI (Android 16), which misses a "lift to wake up" feature and the previous feature that old Xperia phones had, to lock the screen while double tapping on the wallpaper. This app addresses this options.
 
+[Download on Google Play](https://play.google.com/store/apps/details?id=com.emi.l2wu)
+
 ## Screenshots
 ![Main Screen](screenshots/app_1.jpeg)
 
