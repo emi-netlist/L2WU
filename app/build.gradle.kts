@@ -15,8 +15,8 @@ android {
         applicationId = "com.emi.l2wu"
         minSdk = 29
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.6"
+        versionCode = 9
+        versionName = "1.7"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

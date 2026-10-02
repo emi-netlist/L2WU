@@ -12,6 +12,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +42,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 @RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun MainScreen(
+    innerPaddingValues: PaddingValues,
     viewModel: SettingsViewModel = viewModel()
 ) {
     val context = LocalContext.current
@@ -91,7 +93,8 @@ fun MainScreen(
         Spacer(modifier = Modifier.height(12.dp))
 
         // Step 2: Accessibility
-        Button(onClick = {
+        Button(
+            onClick = {
 //            context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             showDisclosureDialog = true
         },

@@ -12,6 +12,7 @@ import kotlin.time.Duration.Companion.milliseconds
 class ScreenControlService : Service(), SensorEventListener {
     private lateinit var sensorManager: SensorManager
     private var accelerometer: Sensor? = null
+    private var proximitySensor: Sensor? = null
     private lateinit var powerManager: PowerManager
 //    private lateinit var wakeLock: PowerManager.WakeLock
 
@@ -23,6 +24,12 @@ class ScreenControlService : Service(), SensorEventListener {
 
     private val CHANNEL_ID = "ScreenControlChannel"
     private val NOTIF_ID = 1
+
+    // State variables holding the latest readings
+    private var proximityDistance: Float = 0.0F
+    private var accelX: Float = 0f
+    private var accelY: Float = 0f
+    private var accelZ: Float = 0f
 
     // Receiver to detect screen state changes
     private val screenStateReceiver = object : BroadcastReceiver() {
@@ -44,6 +51,7 @@ class ScreenControlService : Service(), SensorEventListener {
         super.onCreate()
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        proximitySensor = sensorManager.getDefaultSensor(Sensor.TYPE_PROXIMITY)
         powerManager = getSystemService(POWER_SERVICE) as PowerManager
 
         // Prepare WakeLock to turn on screen
@@ -84,7 +92,9 @@ class ScreenControlService : Service(), SensorEventListener {
 
     private fun startLiftingDetection(): Unit {
         if (cpuWakeLock?.isHeld == false) cpuWakeLock?.acquire()
+
         sensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        sensorManager.registerListener(this, proximitySensor, SensorManager.SENSOR_DELAY_NORMAL)
     }
 
     private fun stopLiftingDetection() {
@@ -125,20 +135,41 @@ class ScreenControlService : Service(), SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent?) {
-        if (event?.sensor?.type == Sensor.TYPE_ACCELEROMETER) {
-            val y = event.values[1]
-            val z = event.values[2]
+        val sensorEvent = event ?: return
 
-            // Simple logic: If phone is tilted up (y > 4) and screen is off
-            if (y > 3.9 /*&& !powerManager.isInteractive*/) {
+        // 1. Update the latest state based on which sensor fired
+        when (sensorEvent.sensor.type) {
+            Sensor.TYPE_PROXIMITY -> {
+//                val distance = sensorEvent.values[0]
+//                val maxRange = proximitySensor?.maximumRange ?: 0f
+//                isNear = distance < maxRange
+                proximityDistance = sensorEvent.values[0]
+            }
+            Sensor.TYPE_ACCELEROMETER -> {
+                accelX = sensorEvent.values[0]
+                accelY = sensorEvent.values[1]
+                accelZ = sensorEvent.values[2]
+            }
+        }
+
+        // 2. Pass combined current values to a single logic function
+        processCombinedSensorData(proximityDistance, accelX, accelY, accelZ)
+    }
+
+    private fun processCombinedSensorData(
+        proximityDistance: Float,
+        accelX: Float,
+        accelY: Float,
+        accelZ: Float
+    ) {
+        // Simple logic: If phone is tilted up (y > 4) and screen is off
+            if (accelY > 3.9 && proximityDistance > 0 /*&& !powerManager.isInteractive*/) {
                 // This wakes the screen.
                 // Once screen wakes, ACTION_SCREEN_ON fires and stops the sensor.
                 if (!screenWakeLock.isHeld) {
                     screenWakeLock.acquire(1000)
                 }
             }
-        }
-
     }
 
     private fun createNotificationChannel() {
@@ -146,7 +177,7 @@ class ScreenControlService : Service(), SensorEventListener {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Screen Controller Service",
-                NotificationManager.IMPORTANCE_HIGH // Use high importance for visibility
+                NotificationManager.IMPORTANCE_MIN // low importance makes the notification with no sounds
             ).apply {
                 description = "Provides a notification to lock the screen"
             }
@@ -161,8 +192,7 @@ class ScreenControlService : Service(), SensorEventListener {
     override fun onDestroy() {
         unregisterReceiver(screenStateReceiver)
         stopLiftingDetection()
-        // Mark as stopped when the service dies
-        ServiceTrackerRepository.setServiceRunning(false)
+        ServiceTrackerRepository.setServiceRunning(false)   // Mark as stopped when the service dies
         super.onDestroy()
     }
 }
