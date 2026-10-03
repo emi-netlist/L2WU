@@ -15,15 +15,16 @@ android {
         applicationId = "com.emi.l2wu"
         minSdk = 29
         targetSdk = 36
-        versionCode = 9
-        versionName = "1.7"
+        versionCode = 11
+        versionName = "2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

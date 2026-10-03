@@ -170,6 +170,7 @@ class ScreenControlService : Service(), SensorEventListener {
                     screenWakeLock.acquire(1000)
                 }
             }
+        this.accelY = 0.0F  // reset the value after screen locking, otherwise it can turn on the screen again if proximityDistance > 0
     }
 
     private fun createNotificationChannel() {
